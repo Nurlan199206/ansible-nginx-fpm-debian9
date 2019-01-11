@@ -1,0 +1,55 @@
+---
+  - name: install "nginx" package
+    apt:
+      name: nginx
+      state: latest
+
+  - name: install "php-72" package
+    apt:
+      name: php
+      state: latest
+
+  - name: install "php-fpm" package
+    apt:
+      name: php-fpm
+      state: latest
+
+  - name: copy the nginx config file and restart nginx
+    copy:
+      src: /etc/ansible/roles/ansible-nginx-fpm-debian9/defaults/default
+      dest: /etc/nginx/sites-available/default
+    become: yes
+
+  - shell: "php -n -v | head -n 1 | cut -d ' ' -f 2 | cut -d '.' -f 1,2"
+    register: php_version
+  - lineinfile:
+      dest: /etc/nginx/sites-available/default
+      regexp: "^fastcgi_pass unix:"
+      insertafter: "^include snippets/fastcgi-php.conf;"
+      line: "fastcgi_pass unix:/var/run/php/php{{ php_version.stdout }}-fpm.sock;"
+
+  - name: copying t.php file for phpinfo
+    copy:
+      src: /etc/ansible/roles/ansible-nginx-fpm-debian9/defaults/t.php
+      dest: /var/www/html/
+    become: yes
+
+  - name: Start service nginx, if not started
+    service:
+      name: nginx
+      state: started
+
+  - name: service nginx reload
+    service:
+      name: nginx
+      state: reloaded
+
+  - name: Remove "dovecot" package
+    apt:
+      name: dovecot-imapd
+      state: absent
+
+  - name: Remove "mysql-server" package
+    apt:
+      name: mysql-server
+      state: absent

@@ -1,0 +1,4 @@
+- hosts: localhost
+  become: yes
+  roles:
+  - role: ansible-nginx-fpm-debian9
